@@ -52,8 +52,10 @@ struct CalendarHistoryView: View {
                                     .foregroundColor(.gray)
                             }
                         }
+                        .onDelete(perform: deleteEntries)
                     }
-                }.onAppear {
+                }
+                .onAppear {
                     // Print to confirm storage state
                     let val = UserDefaults.standard.object(forKey: "logDefaultDelivery") as? Bool
                     print("🔧 CalendarAppearance — stored logDefaultDelivery:", val ?? "nil")
@@ -65,6 +67,9 @@ struct CalendarHistoryView: View {
             }
             .navigationTitle("Journal")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    EditButton()
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Manual Log") {
                         showingManualLog = true
@@ -84,6 +89,14 @@ struct CalendarHistoryView: View {
         guard !trimmed.isEmpty else { return }
         reminderStore.addEntry(text: trimmed, date: Date(), notificationID: UUID().uuidString)
         manualLogText = ""
+    }
+
+    private func deleteEntries(at offsets: IndexSet) {
+        let currentEntries = entriesForSelectedDate
+        for index in offsets {
+            let entry = currentEntries[index]
+            reminderStore.removeEntry(id: entry.id)
+        }
     }
 }
 

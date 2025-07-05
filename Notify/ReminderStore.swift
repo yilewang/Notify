@@ -45,6 +45,14 @@ class ReminderStore: ObservableObject {
         save()
     }
 
+    /// Removes the entry with the specified identifier and persists the change.
+    func removeEntry(id: UUID) {
+        if let index = entries.firstIndex(where: { $0.id == id }) {
+            entries.remove(at: index)
+            save()
+        }
+    }
+
     private func save() {
         if let encodedData = try? JSONEncoder().encode(entries) {
             UserDefaults.standard.set(encodedData, forKey: Self.userDefaultsKey)
