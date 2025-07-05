@@ -18,7 +18,7 @@ struct CalendarHistoryView: View {
     // Editing state
     @State private var editingEntry: ReminderEntry?
     @State private var editText: String = ""
-    @State private var showingEditDialog = false
+    @State private var showingEditSheet = false
 
     var entriesForSelectedDate: [ReminderEntry] {
         reminderStore.entries.filter {
@@ -58,7 +58,7 @@ struct CalendarHistoryView: View {
                             .onTapGesture {
                                 editingEntry = entry
                                 editText = entry.text
-                                showingEditDialog = true
+                                showingEditSheet = true
                             }
                         }
                         .onDelete(perform: deleteEntries)
@@ -105,18 +105,30 @@ struct CalendarHistoryView: View {
                     )
                 }
             }
-            .alert("Edit Entry", isPresented: $showingEditDialog, actions: {
-                TextField("Update text", text: $editText)
-                Button("Save") {
-                    if let entry = editingEntry {
-                        reminderStore.updateEntry(id: entry.id, newText: editText)
+            .sheet(isPresented: $showingEditSheet) {
+                NavigationView {
+                    VStack(alignment: .leading) {
+                        TextEditor(text: $editText)
+                            .padding()
+                            .frame(minHeight: 200)
+                        Spacer()
                     }
-                    editingEntry = nil
+                    .navigationTitle("Edit Entry")
+                    .navigationBarItems(
+                        leading: Button("Cancel") {
+                            showingEditSheet = false
+                            editingEntry = nil
+                        },
+                        trailing: Button("Save") {
+                            if let entry = editingEntry {
+                                reminderStore.updateEntry(id: entry.id, newText: editText)
+                            }
+                            showingEditSheet = false
+                            editingEntry = nil
+                        }
+                    )
                 }
-                Button("Cancel", role: .cancel) {
-                    editingEntry = nil
-                }
-            })
+            }
         }
     }
 
