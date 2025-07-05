@@ -15,6 +15,10 @@ struct CalendarHistoryView: View {
     @State private var selectedDate: Date = Date()
     @State private var showingManualLog = false
     @State private var manualLogText = ""
+    // Editing state
+    @State private var editingEntry: ReminderEntry?
+    @State private var editText: String = ""
+    @State private var showingEditSheet = false
 
     var entriesForSelectedDate: [ReminderEntry] {
         reminderStore.entries.filter {
@@ -51,6 +55,11 @@ struct CalendarHistoryView: View {
                                     .font(.caption)
                                     .foregroundColor(.gray)
                             }
+                            .onTapGesture {
+                                editingEntry = entry
+                                editText = entry.text
+                                showingEditSheet = true
+                            }
                         }
                         .onDelete(perform: deleteEntries)
                     }
@@ -76,11 +85,50 @@ struct CalendarHistoryView: View {
                     }
                 }
             }
-            .alert("Manual Log", isPresented: $showingManualLog, actions: {
-                TextField("What do you want to say?", text: $manualLogText)
-                Button("Save", action: saveManualEntry)
-                Button("Cancel", role: .cancel) {}
-            })
+            .sheet(isPresented: $showingManualLog) {
+                NavigationView {
+                    VStack(alignment: .leading) {
+                        TextEditor(text: $manualLogText)
+                            .padding()
+                            .frame(minHeight: 200)
+                        Spacer()
+                    }
+                    .navigationTitle("Manual Log")
+                    .navigationBarItems(
+                        leading: Button("Cancel") {
+                            showingManualLog = false
+                        },
+                        trailing: Button("Save") {
+                            saveManualEntry()
+                            showingManualLog = false
+                        }
+                    )
+                }
+            }
+            .sheet(isPresented: $showingEditSheet) {
+                NavigationView {
+                    VStack(alignment: .leading) {
+                        TextEditor(text: $editText)
+                            .padding()
+                            .frame(minHeight: 200)
+                        Spacer()
+                    }
+                    .navigationTitle("Edit Entry")
+                    .navigationBarItems(
+                        leading: Button("Cancel") {
+                            showingEditSheet = false
+                            editingEntry = nil
+                        },
+                        trailing: Button("Save") {
+                            if let entry = editingEntry {
+                                reminderStore.updateEntry(id: entry.id, newText: editText)
+                            }
+                            showingEditSheet = false
+                            editingEntry = nil
+                        }
+                    )
+                }
+            }
         }
     }
 
