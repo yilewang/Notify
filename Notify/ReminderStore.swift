@@ -14,8 +14,8 @@ import UserNotifications
 // This struct defines what a single reminder entry looks like.
 struct ReminderEntry: Identifiable, Codable {
     var id = UUID()
-    let date: Date
-    let text: String
+    var date: Date
+    var text: String
     let notificationID: String
 }
 
@@ -51,6 +51,19 @@ class ReminderStore: ObservableObject {
             entries.remove(at: index)
             save()
         }
+    }
+
+    /// Updates the text and optionally the date for a given entry identifier.
+    func updateEntry(id: UUID, newText: String, newDate: Date? = nil) {
+        guard let index = entries.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        entries[index].text = newText
+        if let date = newDate {
+            entries[index].date = date
+        }
+        save()
     }
 
     private func save() {
