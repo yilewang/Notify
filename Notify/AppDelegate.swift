@@ -31,6 +31,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
 
+        if SettingsManager.logDefaultDelivery,
+           let exitTime = UserDefaults.standard.object(forKey: lastExitKey) as? Date {
+            NotificationManager.shared.logMissedDeliveries(since: exitTime, using: store)
+            UserDefaults.standard.removeObject(forKey: lastExitKey)
+        }
+
         let replyAction = UNTextInputNotificationAction(
             identifier: "REPLY_ACTION",
             title: "Respond",
@@ -66,8 +72,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         guard let exitTime = UserDefaults.standard.object(forKey: lastExitKey) as? Date else { return }
         if let store = reminderStore {
             NotificationManager.shared.logMissedDeliveries(since: exitTime, using: store)
+            UserDefaults.standard.removeObject(forKey: lastExitKey)
         }
-        UserDefaults.standard.removeObject(forKey: lastExitKey)
     }
 }
 
