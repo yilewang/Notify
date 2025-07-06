@@ -26,7 +26,7 @@ struct NotifyApp: App {
                     appDelegate.setReminderStore(reminderStore)
                 }
         }
-        .onChange(of: phase) { newPhase in
+        .onChange(of: phase) { _, newPhase in
             if newPhase == .active {
                 appDelegate.logger?.reconcileDeliveredNotifications()
             }
