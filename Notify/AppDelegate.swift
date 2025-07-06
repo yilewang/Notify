@@ -44,6 +44,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         )
 
         UNUserNotificationCenter.current().setNotificationCategories([category])
+
+        // Handle any delivered notifications that arrived before the delegate
+        // was assigned. This ensures missed reminders are logged when the app
+        // launches after being inactive.
+        delegate.logMissedDeliveries()
+        delegate.clearPreviousNotifications()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
