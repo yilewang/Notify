@@ -341,7 +341,7 @@ struct ContentView: View {
                 while notificationTime <= endTimeOnDay && notificationCount < maxNotifications {
                     let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notificationTime)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-                    let request = UNNotificationRequest(identifier: NotificationManager.latestIdentifier, content: content, trigger: trigger)
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
                     UNUserNotificationCenter.current().add(request)
                     notificationCount += 1
                     

@@ -11,9 +11,6 @@ import BackgroundTasks
 
 
 class NotificationManager {
-    /// Identifier used so each scheduled reminder replaces the previous one
-    static let latestIdentifier = "reminder_latest"
-
     static let shared = NotificationManager()
 
     private init() {}
@@ -61,7 +58,7 @@ class NotificationManager {
                     let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notificationTime)
                     let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
 
-                    let request = UNNotificationRequest(identifier: Self.latestIdentifier, content: content, trigger: trigger)
+                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
                     UNUserNotificationCenter.current().add(request)
 
                     notificationCount += 1
