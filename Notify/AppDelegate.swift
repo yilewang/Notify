@@ -50,6 +50,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         delegate.logMissedDeliveries()
     }
 
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        notificationDelegate?.clearPreviousNotifications()
+    }
+
     func handleAppRefresh(task: BGAppRefreshTask) {
         print("📡 Background task triggered")
         NotificationManager.shared.scheduleAppRefresh()
@@ -65,11 +69,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         self.reminderStore = reminderStore
     }
 
-    /// Removes all previously delivered notifications except the one currently
-    /// being presented.
-    private func clearPreviousNotifications(except id: String) {
+    /// Removes all previously delivered notifications except optionally for the
+    /// provided identifier.
+    func clearPreviousNotifications(except id: String? = nil) {
         UNUserNotificationCenter.current().getDeliveredNotifications { delivered in
-            let idsToRemove = delivered.map { $0.request.identifier }.filter { $0 != id }
+            var idsToRemove = delivered.map { $0.request.identifier }
+            if let keep = id {
+                idsToRemove = idsToRemove.filter { $0 != keep }
+            }
             if !idsToRemove.isEmpty {
                 UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: idsToRemove)
             }
