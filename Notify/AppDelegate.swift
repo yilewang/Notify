@@ -44,13 +44,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         )
 
         UNUserNotificationCenter.current().setNotificationCategories([category])
-
-        // Log any notifications that may have been delivered while the app was
-        // not running.
-        delegate.logMissedDeliveries()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        // When returning to the foreground, log any delivered notifications that
+        // weren't handled while the app was inactive before clearing them.
+        notificationDelegate?.logMissedDeliveries()
         notificationDelegate?.clearPreviousNotifications()
     }
 
