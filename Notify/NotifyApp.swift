@@ -13,6 +13,7 @@ struct NotifyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     // The single, shared data store for the entire app.
     @StateObject private var reminderStore = ReminderStore()
+    @Environment(\.scenePhase) private var phase
 
     var body: some Scene {
         WindowGroup {
@@ -24,6 +25,11 @@ struct NotifyApp: App {
                     // handler knows which data to update.
                     appDelegate.setReminderStore(reminderStore)
                 }
+        }
+        .onChange(of: phase) { newPhase in
+            if newPhase == .active {
+                appDelegate.logger?.reconcileDeliveredNotifications()
+            }
         }
     }
 }

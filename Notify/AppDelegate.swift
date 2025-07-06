@@ -12,7 +12,7 @@ import BackgroundTasks
 class AppDelegate: NSObject, UIApplicationDelegate {
     var notificationDelegate: NotificationDelegate?
     private var reminderStore: ReminderStore?
-    private let lastExitKey = "LastExitTime"
+    var logger: NotificationLogger?
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -27,15 +27,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func setReminderStore(_ store: ReminderStore) {
         reminderStore = store
+        logger = NotificationLogger(store: store)
         let delegate = NotificationDelegate(reminderStore: store)
         notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
-
-        if SettingsManager.logDefaultDelivery,
-           let exitTime = UserDefaults.standard.object(forKey: lastExitKey) as? Date {
-            NotificationManager.shared.logMissedDeliveries(since: exitTime, using: store)
-            UserDefaults.standard.removeObject(forKey: lastExitKey)
-        }
+        logger?.reconcileDeliveredNotifications()
 
         let replyAction = UNTextInputNotificationAction(
             identifier: "REPLY_ACTION",
@@ -62,18 +58,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         task.setTaskCompleted(success: true)
     }
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        guard SettingsManager.logDefaultDelivery else { return }
-        UserDefaults.standard.set(Date(), forKey: lastExitKey)
-    }
-
     func applicationDidBecomeActive(_ application: UIApplication) {
-        guard SettingsManager.logDefaultDelivery else { return }
-        guard let exitTime = UserDefaults.standard.object(forKey: lastExitKey) as? Date else { return }
-        if let store = reminderStore {
-            NotificationManager.shared.logMissedDeliveries(since: exitTime, using: store)
-            UserDefaults.standard.removeObject(forKey: lastExitKey)
-        }
+        logger?.reconcileDeliveredNotifications()
     }
 }
 
