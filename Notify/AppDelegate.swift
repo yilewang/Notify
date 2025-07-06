@@ -61,10 +61,22 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         self.reminderStore = reminderStore
     }
 
+    /// Removes all previously delivered notifications except the one currently
+    /// being presented.
+    private func clearPreviousNotifications(except id: String) {
+        UNUserNotificationCenter.current().getDeliveredNotifications { delivered in
+            let idsToRemove = delivered.map { $0.request.identifier }.filter { $0 != id }
+            if !idsToRemove.isEmpty {
+                UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: idsToRemove)
+            }
+        }
+    }
+
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let id = notification.request.identifier
+        clearPreviousNotifications(except: id)
         let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
         print("🛎 willPresent triggered — ID: \(id)")
         print("🧠 willPresent — shouldLog =", shouldLog)
@@ -84,6 +96,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let now = Date()
         let id = response.notification.request.identifier
+        clearPreviousNotifications(except: id)
 
         DispatchQueue.main.async {
             if let textResponse = response as? UNTextInputNotificationResponse,
