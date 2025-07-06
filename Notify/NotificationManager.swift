@@ -118,4 +118,26 @@ extension NotificationManager {
             print("❌ Failed to schedule app refresh: \(error)")
         }
     }
+
+    /// Logs any delivered notifications to the provided store and removes them
+    /// from Notification Center. Only logs when the "logDefaultDelivery" setting
+    /// is enabled.
+    func logDeliveredNotifications(to store: ReminderStore) {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { notifications in
+            let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+
+            if shouldLog {
+                DispatchQueue.main.async {
+                    for note in notifications {
+                        store.addEntry(text: "Reminder delivered",
+                                       date: note.date,
+                                       notificationID: note.request.identifier)
+                    }
+                }
+            }
+
+            center.removeAllDeliveredNotifications()
+        }
+    }
 }

@@ -23,6 +23,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        guard let store = notificationDelegate?.reminderStore else { return }
+        NotificationManager.shared.logDeliveredNotifications(to: store)
+    }
+
     func setReminderStore(_ store: ReminderStore) {
         let delegate = NotificationDelegate(reminderStore: store)
         notificationDelegate = delegate
