@@ -74,7 +74,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let id = notification.request.identifier
-        let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+        let shouldLog = UserPreferences.shared.logDefaultDelivery
         print("🛎 willPresent triggered — ID: \(id)")
         print("🧠 willPresent — shouldLog =", shouldLog)
 
@@ -100,7 +100,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 self.reminderStore.addEntry(text: textResponse.userText, date: now, notificationID: id)
                 print("💬 Reply saved for ID: \(id)")
             } else if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-                let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+                let shouldLog = UserPreferences.shared.logDefaultDelivery
                 print("🛎 didReceive triggered — ID: \(id)")
                 print("🧠 didReceive — shouldLog =", shouldLog)
 

@@ -10,7 +10,7 @@ import UserNotifications
 
 
 struct CalendarHistoryView: View {
-    @AppStorage("logDefaultDelivery") private var logDefaultDelivery: Bool = true
+    @AppStorage("logDefaultDeliveryEnabled") private var logDefaultDelivery: Bool = true
     @EnvironmentObject var reminderStore: ReminderStore
     @State private var selectedDate: Date = Date()
     @State private var showingManualLog = false
@@ -66,10 +66,10 @@ struct CalendarHistoryView: View {
                 }
                 .onAppear {
                     // Print to confirm storage state
-                    let val = UserDefaults.standard.object(forKey: "logDefaultDelivery") as? Bool
+                    let val = UserDefaults.standard.object(forKey: "logDefaultDeliveryEnabled") as? Bool
                     print("🔧 CalendarAppearance — stored logDefaultDelivery:", val ?? "nil")
                     if val == nil {
-                        UserDefaults.standard.set(true, forKey: "logDefaultDelivery")
+                        UserDefaults.standard.set(true, forKey: "logDefaultDeliveryEnabled")
                         print("✅ Initialized logDefaultDelivery to true")
                     }
                 }
