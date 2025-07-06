@@ -118,4 +118,44 @@ extension NotificationManager {
             print("❌ Failed to schedule app refresh: \(error)")
         }
     }
+
+    func logMissedDeliveries(since exitTime: Date, using store: ReminderStore) {
+        let defaults = UserDefaults.standard
+        guard let interval = defaults.object(forKey: "ReminderInterval") as? Int,
+              let start = defaults.object(forKey: "ReminderStartTime") as? Date,
+              let end = defaults.object(forKey: "ReminderEndTime") as? Date,
+              let daysRaw = defaults.object(forKey: "ReminderDays") as? [Int] else {
+            return
+        }
+
+        let selectedDays = Set(daysRaw)
+        let calendar = Calendar.current
+        let now = Date()
+
+        let startHour = calendar.component(.hour, from: start)
+        let startMinute = calendar.component(.minute, from: start)
+        let endHour = calendar.component(.hour, from: end)
+        let endMinute = calendar.component(.minute, from: end)
+
+        var currentDay = calendar.startOfDay(for: exitTime)
+        while currentDay <= now {
+            let weekday = calendar.component(.weekday, from: currentDay)
+            if selectedDays.contains(weekday) {
+                var time = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: currentDay)!
+                let endTimeOnDay = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: currentDay)!
+                if time < exitTime {
+                    while time < exitTime {
+                        time = calendar.date(byAdding: .minute, value: interval, to: time)!
+                    }
+                }
+                while time <= endTimeOnDay && time <= now {
+                    if time > exitTime {
+                        store.addEntry(text: "Reminder delivered", date: time, notificationID: UUID().uuidString)
+                    }
+                    time = calendar.date(byAdding: .minute, value: interval, to: time)!
+                }
+            }
+            currentDay = calendar.date(byAdding: .day, value: 1, to: currentDay)!
+        }
+    }
 }

@@ -289,8 +289,14 @@ struct ContentView: View {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
                 scheduleNotifications()
+                NotificationManager.shared.saveUserSettings(reminderText: reminderText,
+                                                          intervalMinutes: selectedHours * 60 + selectedMinutes,
+                                                          selectedDays: selectedDays,
+                                                          startTime: startTime,
+                                                          endTime: endTime)
                 DispatchQueue.main.async {
                     remindersAreActive = true
+                    UserDefaults.standard.set(true, forKey: "RemindersActive")
                 }
             } else {
                 print("Notification permission denied.")
@@ -301,6 +307,7 @@ struct ContentView: View {
     func cancelReminders() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         remindersAreActive = false
+        UserDefaults.standard.set(false, forKey: "RemindersActive")
     }
     
     func scheduleNotifications() {
