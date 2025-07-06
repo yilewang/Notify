@@ -44,6 +44,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         )
 
         UNUserNotificationCenter.current().setNotificationCategories([category])
+
+        // Log any notifications that may have been delivered while the app was
+        // not running.
+        delegate.logMissedDeliveries()
     }
 
     func handleAppRefresh(task: BGAppRefreshTask) {
@@ -69,6 +73,22 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             if !idsToRemove.isEmpty {
                 UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: idsToRemove)
             }
+        }
+    }
+
+    /// Logs any delivered notifications that weren't handled while the app was
+    /// inactive and removes them so they're not logged again.
+    func logMissedDeliveries() {
+        UNUserNotificationCenter.current().getDeliveredNotifications { notes in
+            let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+            guard shouldLog, !notes.isEmpty else { return }
+
+            for note in notes {
+                self.reminderStore.addEntry(text: "Reminder delivered", date: note.date, notificationID: note.request.identifier)
+            }
+
+            let ids = notes.map { $0.request.identifier }
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
         }
     }
 
