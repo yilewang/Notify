@@ -10,7 +10,7 @@ import UserNotifications
 
 
 struct CalendarHistoryView: View {
-    @AppStorage("logDefaultDelivery") private var logDefaultDelivery: Bool = true
+    @AppStorage("logDefaultDeliveryEnabled") private var logDefaultDelivery: Bool = true
     @EnvironmentObject var reminderStore: ReminderStore
     @State private var selectedDate: Date = Date()
     @State private var showingManualLog = false
@@ -66,10 +66,10 @@ struct CalendarHistoryView: View {
                 }
                 .onAppear {
                     // Print to confirm storage state
-                    let val = UserDefaults.standard.object(forKey: "logDefaultDelivery") as? Bool
+                    let val = UserDefaults.standard.object(forKey: "logDefaultDeliveryEnabled") as? Bool
                     print("🔧 CalendarAppearance — stored logDefaultDelivery:", val ?? "nil")
                     if val == nil {
-                        UserDefaults.standard.set(true, forKey: "logDefaultDelivery")
+                        UserDefaults.standard.set(true, forKey: "logDefaultDeliveryEnabled")
                         print("✅ Initialized logDefaultDelivery to true")
                     }
                 }
@@ -289,8 +289,14 @@ struct ContentView: View {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
                 scheduleNotifications()
+                NotificationManager.shared.saveUserSettings(reminderText: reminderText,
+                                                          intervalMinutes: selectedHours * 60 + selectedMinutes,
+                                                          selectedDays: selectedDays,
+                                                          startTime: startTime,
+                                                          endTime: endTime)
                 DispatchQueue.main.async {
                     remindersAreActive = true
+                    UserDefaults.standard.set(true, forKey: "RemindersActive")
                 }
             } else {
                 print("Notification permission denied.")
@@ -301,6 +307,7 @@ struct ContentView: View {
     func cancelReminders() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         remindersAreActive = false
+        UserDefaults.standard.set(false, forKey: "RemindersActive")
     }
     
     func scheduleNotifications() {

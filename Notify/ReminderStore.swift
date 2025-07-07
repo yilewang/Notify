@@ -66,6 +66,11 @@ class ReminderStore: ObservableObject {
         save()
     }
 
+    /// Returns true if an entry already exists for the given notification ID.
+    func hasLogged(id: String) -> Bool {
+        entries.contains { $0.notificationID == id }
+    }
+
     private func save() {
         if let encodedData = try? JSONEncoder().encode(entries) {
             UserDefaults.standard.set(encodedData, forKey: Self.userDefaultsKey)

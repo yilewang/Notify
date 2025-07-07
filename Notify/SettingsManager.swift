@@ -9,6 +9,6 @@ import Foundation
 
 struct SettingsManager {
     static var logDefaultDelivery: Bool {
-        UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+        UserPreferences.shared.logDefaultDelivery
     }
 }

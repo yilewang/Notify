@@ -11,6 +11,8 @@ import BackgroundTasks
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     var notificationDelegate: NotificationDelegate?
+    private var reminderStore: ReminderStore?
+    var logger: NotificationLogger?
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -24,9 +26,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func setReminderStore(_ store: ReminderStore) {
+        reminderStore = store
+        logger = NotificationLogger(store: store)
         let delegate = NotificationDelegate(reminderStore: store)
         notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
+        logger?.reconcileDeliveredNotifications()
 
         let replyAction = UNTextInputNotificationAction(
             identifier: "REPLY_ACTION",
@@ -52,6 +57,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         NotificationManager.shared.rescheduleNextNotifications()
         task.setTaskCompleted(success: true)
     }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        logger?.reconcileDeliveredNotifications()
+    }
 }
 
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
@@ -65,7 +74,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let id = notification.request.identifier
-        let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+        let shouldLog = UserPreferences.shared.logDefaultDelivery
         print("🛎 willPresent triggered — ID: \(id)")
         print("🧠 willPresent — shouldLog =", shouldLog)
 
@@ -91,7 +100,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 self.reminderStore.addEntry(text: textResponse.userText, date: now, notificationID: id)
                 print("💬 Reply saved for ID: \(id)")
             } else if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-                let shouldLog = UserDefaults.standard.bool(forKey: "logDefaultDelivery")
+                let shouldLog = UserPreferences.shared.logDefaultDelivery
                 print("🛎 didReceive triggered — ID: \(id)")
                 print("🧠 didReceive — shouldLog =", shouldLog)
 
