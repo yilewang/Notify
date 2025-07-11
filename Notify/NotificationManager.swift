@@ -118,4 +118,5 @@ extension NotificationManager {
             print("❌ Failed to schedule app refresh: \(error)")
         }
     }
+
 }
