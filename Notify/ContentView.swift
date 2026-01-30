@@ -153,6 +153,7 @@ struct ContentView: View {
     @State private var showingAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var showingCalendar: Bool = false
+    @State private var pendingNotificationCount: Int = 0
     
     let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
 
@@ -226,6 +227,9 @@ struct ContentView: View {
                                 Text("Reminders are active")
                                     .font(.headline)
                             }
+                            Text("Pending notifications: \(pendingNotificationCount)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                             
                             Button(action: cancelReminders) {
                                 Text("Cancel Reminders")
@@ -256,6 +260,14 @@ struct ContentView: View {
                     selectedDays = settings.selectedDays
                     startTime = settings.startTime
                     endTime = settings.endTime
+                }
+                refreshPendingNotificationCount()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .pendingNotificationCountDidChange)) { note in
+                if let count = note.userInfo?[NotificationManager.pendingCountUserInfoKey] as? Int {
+                    pendingNotificationCount = count
+                } else {
+                    refreshPendingNotificationCount()
                 }
             }
             .toolbar {
@@ -320,6 +332,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     remindersAreActive = true
                     UserDefaults.standard.set(true, forKey: "RemindersActive")
+                    NotificationManager.shared.refreshPendingNotificationCount()
                 }
             } else {
                 print("Notification permission denied.")
@@ -331,5 +344,14 @@ struct ContentView: View {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         remindersAreActive = false
         UserDefaults.standard.set(false, forKey: "RemindersActive")
+        NotificationManager.shared.refreshPendingNotificationCount()
+    }
+
+    private func refreshPendingNotificationCount() {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            DispatchQueue.main.async {
+                pendingNotificationCount = requests.count
+            }
+        }
     }
 }

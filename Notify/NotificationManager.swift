@@ -12,6 +12,7 @@ import BackgroundTasks
 
 class NotificationManager {
     static let shared = NotificationManager()
+    static let pendingCountUserInfoKey = "PendingNotificationCount"
 
     private init() {}
 
@@ -29,6 +30,15 @@ class NotificationManager {
         let selectedDays: Set<Int>
         let startTime: Date
         let endTime: Date
+    }
+
+    func refreshPendingNotificationCount(_ center: UNUserNotificationCenter = .current()) {
+        center.getPendingNotificationRequests { requests in
+            let count = requests.count
+            NotificationCenter.default.post(name: .pendingNotificationCountDidChange,
+                                            object: nil,
+                                            userInfo: [Self.pendingCountUserInfoKey: count])
+        }
     }
 
     /// Schedules notifications for the next 7 days based on user preferences
@@ -93,6 +103,7 @@ class NotificationManager {
         }
 
         print("✅ Scheduled \(notificationCount) notifications.")
+        refreshPendingNotificationCount()
     }
 
     /// Call this from your background task to keep notifications fresh
@@ -141,6 +152,10 @@ class NotificationManager {
                               startTime: start,
                               endTime: end)
     }
+}
+
+extension Notification.Name {
+    static let pendingNotificationCountDidChange = Notification.Name("pendingNotificationCountDidChange")
 }
 
 extension NotificationManager {

@@ -64,6 +64,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             NotificationManager.shared.rescheduleNextNotifications()
             NotificationManager.shared.scheduleAppRefresh()
         }
+        NotificationManager.shared.refreshPendingNotificationCount()
     }
 }
 
@@ -89,6 +90,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             print("🚫 willPresent — Skipped default logging: \(id)")
         }
 
+        NotificationManager.shared.refreshPendingNotificationCount()
         completionHandler([.banner, .sound])
     }
 
@@ -115,6 +117,8 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     print("🚫 didReceive — Skipped default logging: \(id)")
                 }
             }
+
+            NotificationManager.shared.refreshPendingNotificationCount()
         }
 
         completionHandler()
