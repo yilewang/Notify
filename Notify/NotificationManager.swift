@@ -15,12 +15,37 @@ class NotificationManager {
 
     private init() {}
 
+    private enum Keys {
+        static let reminderText = "ReminderText"
+        static let reminderInterval = "ReminderInterval"
+        static let reminderStartTime = "ReminderStartTime"
+        static let reminderEndTime = "ReminderEndTime"
+        static let reminderDays = "ReminderDays"
+    }
+
+    struct StoredSettings {
+        let reminderText: String
+        let intervalMinutes: Int
+        let selectedDays: Set<Int>
+        let startTime: Date
+        let endTime: Date
+    }
+
     /// Schedules notifications for the next 7 days based on user preferences
     func scheduleReminders(reminderText: String,
                            intervalMinutes: Int,
                            selectedDays: Set<Int>,
                            startTime: Date,
                            endTime: Date) {
+        guard intervalMinutes > 0 else {
+            print("❌ Invalid interval; must be greater than 0 minutes.")
+            return
+        }
+        guard !selectedDays.isEmpty else {
+            print("❌ No days selected for scheduling.")
+            return
+        }
+
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
 
         let content = UNMutableNotificationContent()
@@ -74,21 +99,16 @@ class NotificationManager {
     func rescheduleNextNotifications() {
         let defaults = UserDefaults.standard
 
-        guard let reminderText = defaults.string(forKey: "ReminderText"),
-              let interval = defaults.object(forKey: "ReminderInterval") as? Int,
-              let start = defaults.object(forKey: "ReminderStartTime") as? Date,
-              let end = defaults.object(forKey: "ReminderEndTime") as? Date,
-              let daysRaw = defaults.object(forKey: "ReminderDays") as? [Int] else {
+        guard let settings = loadUserSettings() else {
             print("❌ Missing user settings for rescheduling.")
             return
         }
 
-        let selectedDays = Set(daysRaw)
-        scheduleReminders(reminderText: reminderText,
-                          intervalMinutes: interval,
-                          selectedDays: selectedDays,
-                          startTime: start,
-                          endTime: end)
+        scheduleReminders(reminderText: settings.reminderText,
+                          intervalMinutes: settings.intervalMinutes,
+                          selectedDays: settings.selectedDays,
+                          startTime: settings.startTime,
+                          endTime: settings.endTime)
     }
 
     /// Optional: persist user preferences when they start reminders
@@ -98,11 +118,28 @@ class NotificationManager {
                           startTime: Date,
                           endTime: Date) {
         let defaults = UserDefaults.standard
-        defaults.set(reminderText, forKey: "ReminderText")
-        defaults.set(intervalMinutes, forKey: "ReminderInterval")
-        defaults.set(startTime, forKey: "ReminderStartTime")
-        defaults.set(endTime, forKey: "ReminderEndTime")
-        defaults.set(Array(selectedDays), forKey: "ReminderDays")
+        defaults.set(reminderText, forKey: Keys.reminderText)
+        defaults.set(intervalMinutes, forKey: Keys.reminderInterval)
+        defaults.set(startTime, forKey: Keys.reminderStartTime)
+        defaults.set(endTime, forKey: Keys.reminderEndTime)
+        defaults.set(Array(selectedDays), forKey: Keys.reminderDays)
+    }
+
+    func loadUserSettings() -> StoredSettings? {
+        let defaults = UserDefaults.standard
+        guard let reminderText = defaults.string(forKey: Keys.reminderText),
+              let interval = defaults.object(forKey: Keys.reminderInterval) as? Int,
+              let start = defaults.object(forKey: Keys.reminderStartTime) as? Date,
+              let end = defaults.object(forKey: Keys.reminderEndTime) as? Date,
+              let daysRaw = defaults.object(forKey: Keys.reminderDays) as? [Int] else {
+            return nil
+        }
+
+        return StoredSettings(reminderText: reminderText,
+                              intervalMinutes: interval,
+                              selectedDays: Set(daysRaw),
+                              startTime: start,
+                              endTime: end)
     }
 }
 

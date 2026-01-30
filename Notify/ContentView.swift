@@ -64,15 +64,6 @@ struct CalendarHistoryView: View {
                         .onDelete(perform: deleteEntries)
                     }
                 }
-                .onAppear {
-                    // Print to confirm storage state
-                    let val = UserDefaults.standard.object(forKey: "logDefaultDeliveryEnabled") as? Bool
-                    print("🔧 CalendarAppearance — stored logDefaultDelivery:", val ?? "nil")
-                    if val == nil {
-                        UserDefaults.standard.set(true, forKey: "logDefaultDeliveryEnabled")
-                        print("✅ Initialized logDefaultDelivery to true")
-                    }
-                }
             }
             .navigationTitle("Journal")
             .toolbar {
@@ -256,6 +247,17 @@ struct ContentView: View {
             .alert(isPresented: $showingAlert) {
                 Alert(title: Text("Invalid Time Range"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
+            .onAppear {
+                remindersAreActive = UserDefaults.standard.bool(forKey: "RemindersActive")
+                if let settings = NotificationManager.shared.loadUserSettings() {
+                    reminderText = settings.reminderText
+                    selectedHours = settings.intervalMinutes / 60
+                    selectedMinutes = settings.intervalMinutes % 60
+                    selectedDays = settings.selectedDays
+                    startTime = settings.startTime
+                    endTime = settings.endTime
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
@@ -288,12 +290,33 @@ struct ContentView: View {
         
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
-                scheduleNotifications()
+                let intervalMinutes = selectedHours * 60 + selectedMinutes
+                if intervalMinutes <= 0 {
+                    DispatchQueue.main.async {
+                        alertMessage = "Please choose a reminder interval greater than 0 minutes."
+                        showingAlert = true
+                    }
+                    return
+                }
+                if selectedDays.isEmpty {
+                    DispatchQueue.main.async {
+                        alertMessage = "Please select at least one day."
+                        showingAlert = true
+                    }
+                    return
+                }
+
                 NotificationManager.shared.saveUserSettings(reminderText: reminderText,
-                                                          intervalMinutes: selectedHours * 60 + selectedMinutes,
+                                                          intervalMinutes: intervalMinutes,
                                                           selectedDays: selectedDays,
                                                           startTime: startTime,
                                                           endTime: endTime)
+                NotificationManager.shared.scheduleReminders(reminderText: reminderText,
+                                                             intervalMinutes: intervalMinutes,
+                                                             selectedDays: selectedDays,
+                                                             startTime: startTime,
+                                                             endTime: endTime)
+                NotificationManager.shared.scheduleAppRefresh()
                 DispatchQueue.main.async {
                     remindersAreActive = true
                     UserDefaults.standard.set(true, forKey: "RemindersActive")
@@ -308,58 +331,5 @@ struct ContentView: View {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         remindersAreActive = false
         UserDefaults.standard.set(false, forKey: "RemindersActive")
-    }
-    
-    func scheduleNotifications() {
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-
-        let content = UNMutableNotificationContent()
-        content.title = "Time for a check-in!"
-        content.body = reminderText
-        content.sound = UNNotificationSound.default
-        content.categoryIdentifier = "REMINDER_CATEGORY"
-
-        let intervalMinutes = selectedHours * 60 + selectedMinutes
-        let calendar = Calendar.current
-        var notificationCount = 0
-        let maxNotifications = 64
-
-        for dayOffset in 0..<7 {
-            guard notificationCount < maxNotifications else { break }
-
-            let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: Date())!
-            let weekday = calendar.component(.weekday, from: targetDate)
-
-            if selectedDays.contains(weekday) {
-                let startHour = calendar.component(.hour, from: startTime)
-                let startMinute = calendar.component(.minute, from: startTime)
-                let endHour = calendar.component(.hour, from: endTime)
-                let endMinute = calendar.component(.minute, from: endTime)
-
-                var notificationTime = calendar.date(bySettingHour: startHour, minute: startMinute, second: 0, of: targetDate)!
-                let endTimeOnDay = calendar.date(bySettingHour: endHour, minute: endMinute, second: 0, of: targetDate)!
-                
-                if dayOffset == 0 {
-                    while notificationTime < Date() {
-                         notificationTime = calendar.date(byAdding: .minute, value: intervalMinutes, to: notificationTime)!
-                    }
-                }
-
-                while notificationTime <= endTimeOnDay && notificationCount < maxNotifications {
-                    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notificationTime)
-                    let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-                    let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-                    UNUserNotificationCenter.current().add(request)
-                    notificationCount += 1
-                    
-                    if let nextTime = calendar.date(byAdding: .minute, value: intervalMinutes, to: notificationTime) {
-                        notificationTime = nextTime
-                    } else {
-                        break
-                    }
-                }
-            }
-        }
-        print("\(notificationCount) notifications scheduled for the next 7 days (iOS limit is 64).")
     }
 }

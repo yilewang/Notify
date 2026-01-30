@@ -23,6 +23,7 @@ struct ReminderEntry: Identifiable, Codable {
 class ReminderStore: ObservableObject {
     @Published var entries: [ReminderEntry]
     private static let userDefaultsKey = "ReminderEntries"
+    private static let maxEntries = 500
 
     init() {
         if let data = UserDefaults.standard.data(forKey: Self.userDefaultsKey),
@@ -31,6 +32,7 @@ class ReminderStore: ObservableObject {
         } else {
             self.entries = []
         }
+        pruneIfNeeded()
     }
 
     func addEntry(text: String, date: Date, notificationID: String) {
@@ -42,6 +44,7 @@ class ReminderStore: ObservableObject {
 
         let newEntry = ReminderEntry(date: date, text: text, notificationID: notificationID)
         entries.append(newEntry)
+        pruneIfNeeded()
         save()
     }
 
@@ -75,5 +78,12 @@ class ReminderStore: ObservableObject {
         if let encodedData = try? JSONEncoder().encode(entries) {
             UserDefaults.standard.set(encodedData, forKey: Self.userDefaultsKey)
         }
+    }
+
+    private func pruneIfNeeded() {
+        guard entries.count > Self.maxEntries else { return }
+        entries.sort { $0.date < $1.date }
+        let overflow = entries.count - Self.maxEntries
+        entries.removeFirst(overflow)
     }
 }

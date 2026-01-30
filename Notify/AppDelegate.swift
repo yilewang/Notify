@@ -60,6 +60,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         logger?.reconcileDeliveredNotifications()
+        if UserDefaults.standard.bool(forKey: "RemindersActive") {
+            NotificationManager.shared.rescheduleNextNotifications()
+            NotificationManager.shared.scheduleAppRefresh()
+        }
     }
 }
 
@@ -116,4 +120,3 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         completionHandler()
     }
 }
-

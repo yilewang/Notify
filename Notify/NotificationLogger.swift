@@ -10,7 +10,6 @@ final class NotificationLogger {
     /// Reconciles any delivered notifications that have not yet been logged.
     func reconcileDeliveredNotifications(_ center: UNUserNotificationCenter = .current()) {
         guard UserPreferences.shared.logDefaultDelivery else {
-            center.removeAllDeliveredNotifications()
             return
         }
         center.getDeliveredNotifications { [weak self] delivered in
